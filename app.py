@@ -3,44 +3,85 @@ import numpy as np
 import joblib
 import os
 
-st.set_page_config(page_title="Web Phishing Detector", layout="wide")
-st.title("🔐 Web Page Phishing Detection")
+# -------------------
+# Credentials
+# -------------------
+USERNAME = "admin"
+PASSWORD = "password1234"
 
-# Load trained model
-model_path = "model.pkl"
-if os.path.exists(model_path):
-    xgb = joblib.load(model_path)
-    st.success("✅ Model loaded successfully.")
-else:
-    st.error("❌ Model file not found. Please upload `model.pkl`.")
+# -------------------
+# Session state check
+# -------------------
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
 
-# Input form for user
-st.subheader("🧪 Test a Webpage by Entering Features")
-
-feature_names = [
-    'url_length', 'n_dots', 'n_hypens', 'n_underline',
-    'n_slash', 'n_questionmark', 'n_redirection'
-]
-
-user_input = []
-cols = st.columns(3)
-
-for i, feature in enumerate(feature_names):
-    val = cols[i % 3].number_input(
-        label=f"{feature}",
-        min_value=0,
-        value=1,
-        step=1
-    )
-    user_input.append(val)
-
-# Predict
-if st.button("Predict"):
-    input_array = np.array(user_input).reshape(1, -1)
-    prediction = xgb.predict(input_array)
-
-    if prediction[0] == 1:
-        st.error("⚠️ Phishing Detected!")
+# -------------------
+# Login Function
+# -------------------
+def login(username_input, password_input):
+    if username_input == USERNAME and password_input == PASSWORD:
+        st.session_state.authenticated = True
+        st.success("✅ Login successful!")
     else:
-        st.success("✅ Looks Safe!")
+        st.error("❌ Invalid username or password")
 
+# -------------------
+# Login Page
+# -------------------
+def login_page():
+    st.title("🔐 Login")
+    st.write("Please log in to access the phishing detector.")
+
+    with st.form("login_form"):
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        submitted = st.form_submit_button("Login")
+
+        if submitted:
+            login(username, password)
+
+# -------------------
+# Prediction Page
+# -------------------
+def prediction_page():
+    st.title("🛡️ Web Page Phishing Detector")
+
+    # Load model
+    model_path = "model.pkl"
+    if os.path.exists(model_path):
+        model = joblib.load(model_path)
+        st.success("✅ Model loaded.")
+    else:
+        st.error("❌ `model.pkl` not found. Please upload the trained model.")
+        st.stop()
+
+    st.subheader("🔍 Enter Features to Predict")
+
+    features = [
+        'url_length', 'n_dots', 'n_hypens', 'n_underline',
+        'n_slash', 'n_questionmark', 'n_redirection'
+    ]
+
+    input_vals = []
+    cols = st.columns(3)
+
+    for i, feature in enumerate(features):
+        val = cols[i % 3].number_input(f"{feature}", min_value=0, value=1)
+        input_vals.append(val)
+
+    if st.button("Predict"):
+        input_array = np.array(input_vals).reshape(1, -1)
+        prediction = model.predict(input_array)
+
+        if prediction[0] == 1:
+            st.error("⚠️ This is likely a phishing website!")
+        else:
+            st.success("✅ This website appears safe.")
+
+# -------------------
+# Main App Logic
+# -------------------
+if not st.session_state.authenticated:
+    login_page()
+else:
+    prediction_page()
