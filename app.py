@@ -1,106 +1,56 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[9]:
-
 import streamlit as st
 import pandas as pd
-import seaborn as sns
 import numpy as np
-import matplotlib.pyplot as plt
-
-
-# In[10]:
-
-
-df=pd.read_csv(r'C:\Users\USER\Desktop\cyber security\phishing\web-page-phishing.csv')
-
-
-# In[11]:
-
-
-df.head()
-
-
-# In[12]:
-
-
-df.info()
-
-
-# In[13]:
-
-
-cat_col = ['n_at','n_tilde','n_redirection']
-for i in cat_col:
-    print(i)
-    df[i] = df[i].fillna(df[i].median())
-
-
-# In[14]:
-
-
-from sklearn.metrics import accuracy_score, classification_report,precision_score
-
-
-# In[15]:
-
-
-X = df.loc[:, ['url_length', 'n_dots', 'n_hypens', 'n_underline', 'n_slash',
-               'n_questionmark', 'n_redirection']]
-Y = df['phishing']
-
-
-# In[27]:
-
-
-from xgboost import XGBClassifier
-from sklearn.model_selection import RandomizedSearchCV
-
-
-# In[29]:
-
-
-params = {
-    "learning_rate": [0.05, 0.10, 0.15, 0.20, 0.25, 0.30],
-    "max_depth": [3, 4, 5, 6, 8, 10, 12, 15],
-    "min_child_weight": [1, 3, 5, 7],
-    "gamma": [0.0, 0.1, 0.2, 0.3, 0.4],
-    "colsample_bytree": [0.3, 0.4, 0.5, 0.7]
-}
-grcv= RandomizedSearchCV(XGBClassifier(random_state=32), params, n_jobs=-1, cv=3)
-grcv.fit(X, Y)
-grcv.best_params_
-
-
-# In[35]:
-
-
 from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
 
+st.set_page_config(page_title="Phishing Website Detection", layout="centered")
 
-# In[37]:
+st.title("🛡️ Phishing Website Detection")
 
+# Upload CSV
+uploaded_file = st.file_uploader("Upload CSV with features and target column `Result`", type=["csv"])
 
-xtrain, xtest, ytrain , ytest = train_test_split(X,Y, random_state=67,test_size=0.20, stratify=Y)
+if uploaded_file is not None:
+    df = pd.read_csv(uploaded_file)
+    st.subheader("🔍 Preview of Uploaded Data")
+    st.dataframe(df.head())
 
+    if "Result" not in df.columns:
+        st.error("The dataset must contain a 'Result' column for labels.")
+    else:
+        # Basic stats
+        st.subheader("📊 Dataset Info")
+        st.write(f"Number of rows: {df.shape[0]}")
+        st.write(f"Number of columns: {df.shape[1]}")
 
-# In[39]:
+        # Prepare data
+        X = df.drop(columns=["Result"])
+        y = df["Result"]
 
+        # Train/test split
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-xgb =  XGBClassifier(max_depth=12, min_child_weight= 3,learning_rate=0.15,gamma=0.3,colsample_bytree= 0.5)
-xgb.fit(xtrain, ytrain)
-xgb_pred =xgb.predict(xtest)
+        # Train model
+        model = RandomForestClassifier(random_state=42)
+        model.fit(X_train, y_train)
 
+        # Predict and evaluate
+        y_pred = model.predict(X_test)
+        acc = accuracy_score(y_test, y_pred)
 
-# In[43]:
+        st.subheader("✅ Model Evaluation")
+        st.write(f"Accuracy on test data: **{acc:.2f}**")
 
+        # Predict with user input
+        st.subheader("🧪 Try Model with Custom Input")
+        sample_input = []
+        for col in X.columns:
+            val = st.number_input(f"{col}", value=0)
+            sample_input.append(val)
 
-print("Accuracy:", accuracy_score(ytest, xgb_pred))
-
-print("Classification Report:\n", classification_report(ytest, xgb_pred))
-
-
-
-
-
+        if st.button("Predict"):
+            pred = model.predict([sample_input])
+            label = "Legitimate" if pred[0] == 1 else "Phishing"
+            st.success(f"Prediction: {label}")
