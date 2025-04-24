@@ -1,27 +1,46 @@
 import streamlit as st
 import pandas as pd
-import joblib
-import xgboost as xgb
+import seaborn as sns
+import numpy as np
+import matplotlib.pyplot as plt
 
-# Load model
-model = joblib.load("model.pkl")
 
-st.title("Phishing Website Detector")
+# In[10]:
 
-# Input fields
-n_at = st.number_input("Number of @ symbols", value=0.0)
-n_tilde = st.number_input("Number of ~ symbols", value=0.0)
-n_redirection = st.number_input("Number of redirections", value=0.0)
 
-# Add more features if needed...
+df=pd.read_csv(r'C:\Users\USER\Desktop\cyber security\phishing\web-page-phishing.csv')
 
-if st.button("Predict"):
-    input_df = pd.DataFrame([{
-        "n_at": n_at,
-        "n_tilde": n_tilde,
-        "n_redirection": n_redirection
-        # Add more keys if additional features are used
-    }])
-    prediction = model.predict(input_df)
-    result = "Phishing Website" if prediction[0] == 1 else "Legitimate Website"
-    st.success(f"Prediction: {result}")
+
+# In[11]:
+
+
+df.head()
+
+
+# In[12]:
+
+
+df.info()
+
+
+# In[13]:
+
+
+cat_col = ['n_at','n_tilde','n_redirection']
+for i in cat_col:
+    print(i)
+    df[i] = df[i].fillna(df[i].median())
+
+
+# In[14]:
+
+
+from sklearn.metrics import accuracy_score, classification_report,precision_score
+
+
+# In[15]:
+
+
+X = df.loc[:, ['url_length', 'n_dots', 'n_hypens', 'n_underline', 'n_slash',
+               'n_questionmark', 'n_redirection']]
+Y = df['phishing']
