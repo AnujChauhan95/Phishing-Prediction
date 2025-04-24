@@ -4,7 +4,7 @@ import joblib
 import xgboost as xgb
 
 # Load model
-model = joblib.load("xgb_model.pkl")
+model = joblib.load("model.pkl")
 
 st.title("Phishing Website Detector")
 
