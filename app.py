@@ -85,3 +85,7 @@ if not st.session_state.authenticated:
     login_page()
 else:
     prediction_page()
+
+# Footer
+st.markdown("---")
+st.markdown("<p style='text-align: center;'>Made by Anuj Chauhan</p>", unsafe_allow_html=True)
